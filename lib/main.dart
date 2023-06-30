@@ -10,9 +10,8 @@ class NotesApp extends StatelessWidget {
     return MaterialApp(
       title: 'Notes App',
       theme: ThemeData(
-        brightness: Brightness.dark, // Set the overall brightness to dark
-        primaryColor: Colors.black, // Set the primary color to black
-
+        brightness: Brightness.dark,
+        primaryColor: Colors.black,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
       home: const NotesHomePage(),
@@ -77,8 +76,7 @@ class _NotesHomePageState extends State<NotesHomePage> {
           return GestureDetector(
             onTap: () => editNote(index),
             child: Card(
-              color:
-                  Colors.grey[800], // Set the card color to a dark grey shade
+              color: Colors.grey[800],
               child: Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: Column(
@@ -100,7 +98,7 @@ class _NotesHomePageState extends State<NotesHomePage> {
                     IconButton(
                       icon: const Icon(Icons.delete),
                       onPressed: () => deleteNote(index),
-                      color: Colors.white, // Set the icon color to white
+                      color: Colors.white,
                     ),
                   ],
                 ),
