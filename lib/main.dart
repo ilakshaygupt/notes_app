@@ -88,19 +88,6 @@ class _NotesHomePageState extends State<NotesHomePage> {
     });
   }
 
-  Widget buildNoteBody(Note note) {
-    final trimmedText = note.body.trim();
-    final lines = trimmedText.split('\n');
-    final firstFewLines = lines.take(4).join('\n');
-
-    return Text(
-      firstFewLines,
-      maxLines: 4,
-      overflow: TextOverflow.ellipsis,
-      style: const TextStyle(fontSize: 14),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -126,12 +113,19 @@ class _NotesHomePageState extends State<NotesHomePage> {
                     Text(
                       notes[index].title,
                       style: const TextStyle(
-                        fontSize: 16,
+                        fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: 8.0),
-                    buildNoteBody(notes[index]),
+                    Text(
+                      notes[index].body,
+                      style: const TextStyle(
+                        fontSize: 16,
+                      ),
+                      maxLines: 4,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                     const Spacer(),
                     IconButton(
                       icon: const Icon(Icons.delete),
@@ -246,16 +240,14 @@ class _AddNotePageState extends State<AddNotePage> {
                 controller: _titleController,
                 onChanged: (_) => _textChanged(),
                 decoration: const InputDecoration(
-                  labelText: 'Title',
-                ),
+                    labelText: 'Title', border: InputBorder.none),
               ),
               const SizedBox(height: 16.0),
               TextFormField(
                 controller: _bodyController,
                 onChanged: (_) => _textChanged(),
                 decoration: const InputDecoration(
-                  labelText: 'Body',
-                ),
+                    labelText: 'Body', border: InputBorder.none),
                 maxLines: null,
                 keyboardType: TextInputType.multiline,
                 textInputAction: TextInputAction.newline,
