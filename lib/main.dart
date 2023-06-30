@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 void main() => runApp(const NotesApp());
 
@@ -32,7 +33,7 @@ class _NotesHomePageState extends State<NotesHomePage> {
   void addNote() async {
     final newNote = await Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const AddNotePage()),
+      MaterialPageRoute(builder: (context) => AddNotePage()),
     );
     if (newNote != null) {
       setState(() {
@@ -116,10 +117,13 @@ class _NotesHomePageState extends State<NotesHomePage> {
 }
 
 class Note {
-  final String title;
-  final String body;
+  late final String title;
+  late final String body;
 
-  Note({required this.title, required this.body});
+  Note({
+    required this.title,
+    required this.body,
+  });
 }
 
 class AddNotePage extends StatefulWidget {
@@ -132,16 +136,18 @@ class AddNotePage extends StatefulWidget {
 }
 
 class _AddNotePageState extends State<AddNotePage> {
-  final TextEditingController _titleController = TextEditingController();
-  final TextEditingController _bodyController = TextEditingController();
+  late final TextEditingController _titleController;
+  late final TextEditingController _bodyController;
+  bool _hasChanges = false;
 
   @override
   void initState() {
     super.initState();
-    if (widget.note != null) {
-      _titleController.text = widget.note!.title;
-      _bodyController.text = widget.note!.body;
-    }
+    _titleController = TextEditingController(text: widget.note?.title);
+    _bodyController = TextEditingController(text: widget.note?.body);
+
+    _titleController.addListener(_textChanged);
+    _bodyController.addListener(_textChanged);
   }
 
   @override
@@ -151,46 +157,61 @@ class _AddNotePageState extends State<AddNotePage> {
     super.dispose();
   }
 
+  void _textChanged() {
+    setState(() {
+      _hasChanges = true;
+    });
+  }
+
+  void _saveNote() {
+    final updatedTitle = _titleController.text;
+    final updatedBody = _bodyController.text;
+    if (updatedTitle.isNotEmpty && updatedBody.isNotEmpty) {
+      final updatedNote = Note(
+        title: updatedTitle,
+        body: updatedBody,
+      );
+      Navigator.pop(context, updatedNote);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.note != null ? 'Edit Note' : 'Add Note'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            TextField(
-              controller: _titleController,
-              decoration: const InputDecoration(
-                labelText: 'Title',
+    return WillPopScope(
+      onWillPop: () async {
+        if (_hasChanges) {
+          _saveNote();
+          return false; // Prevent popping the context immediately
+        }
+        return true; // Allow popping the context
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(widget.note != null ? 'Edit Note' : 'Add Note'),
+        ),
+        body: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              TextField(
+                controller: _titleController,
+                onChanged: (_) => _textChanged(),
+                decoration: const InputDecoration(
+                  labelText: 'Title',
+                ),
               ),
-            ),
-            const SizedBox(height: 16.0),
-            TextField(
-              controller: _bodyController,
-              decoration: const InputDecoration(
-                labelText: 'Body',
+              const SizedBox(height: 16.0),
+              TextField(
+                controller: _bodyController,
+                onChanged: (_) => _textChanged(),
+                decoration: const InputDecoration(
+                  labelText: 'Body',
+                ),
+                maxLines: null, // Allow multiple lines in the TextField
               ),
-            ),
-            const SizedBox(height: 16.0),
-            ElevatedButton(
-              onPressed: () {
-                final updatedTitle = _titleController.text;
-                final updatedBody = _bodyController.text;
-                if (updatedTitle.isNotEmpty && updatedBody.isNotEmpty) {
-                  final updatedNote = Note(
-                    title: updatedTitle,
-                    body: updatedBody,
-                  );
-                  Navigator.pop(context, updatedNote);
-                }
-              },
-              child: const Text('Save'),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
