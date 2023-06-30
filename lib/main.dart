@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() => runApp(const NotesApp());
 
@@ -30,14 +30,38 @@ class NotesHomePage extends StatefulWidget {
 class _NotesHomePageState extends State<NotesHomePage> {
   List<Note> notes = [];
 
+  @override
+  void initState() {
+    super.initState();
+    loadNotes();
+  }
+
+  void loadNotes() async {
+    final prefs = await SharedPreferences.getInstance();
+    final noteList = prefs.getStringList('notes');
+    if (noteList != null) {
+      setState(() {
+        notes =
+            noteList.map((noteString) => Note.fromString(noteString)).toList();
+      });
+    }
+  }
+
+  void saveNotes() async {
+    final prefs = await SharedPreferences.getInstance();
+    final noteList = notes.map((note) => note.toString()).toList();
+    await prefs.setStringList('notes', noteList);
+  }
+
   void addNote() async {
     final newNote = await Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => AddNotePage()),
+      MaterialPageRoute(builder: (context) => const AddNotePage()),
     );
     if (newNote != null) {
       setState(() {
         notes.add(newNote);
+        saveNotes();
       });
     }
   }
@@ -52,6 +76,7 @@ class _NotesHomePageState extends State<NotesHomePage> {
     if (updatedNote != null) {
       setState(() {
         notes[index] = updatedNote;
+        saveNotes();
       });
     }
   }
@@ -59,7 +84,21 @@ class _NotesHomePageState extends State<NotesHomePage> {
   void deleteNote(int index) {
     setState(() {
       notes.removeAt(index);
+      saveNotes();
     });
+  }
+
+  Widget buildNoteBody(Note note) {
+    final trimmedText = note.body.trim();
+    final lines = trimmedText.split('\n');
+    final firstFewLines = lines.take(4).join('\n');
+
+    return Text(
+      firstFewLines,
+      maxLines: 4,
+      overflow: TextOverflow.ellipsis,
+      style: const TextStyle(fontSize: 14),
+    );
   }
 
   @override
@@ -82,6 +121,7 @@ class _NotesHomePageState extends State<NotesHomePage> {
                 padding: const EdgeInsets.all(8.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
                     Text(
                       notes[index].title,
@@ -91,10 +131,7 @@ class _NotesHomePageState extends State<NotesHomePage> {
                       ),
                     ),
                     const SizedBox(height: 8.0),
-                    Text(
-                      notes[index].body,
-                      style: const TextStyle(fontSize: 14),
-                    ),
+                    buildNoteBody(notes[index]),
                     const Spacer(),
                     IconButton(
                       icon: const Icon(Icons.delete),
@@ -124,6 +161,17 @@ class Note {
     required this.title,
     required this.body,
   });
+
+  Note.fromString(String noteString) {
+    final parts = noteString.split('\n');
+    title = parts[0];
+    body = parts.sublist(1).join('\n');
+  }
+
+  @override
+  String toString() {
+    return '$title\n$body';
+  }
 }
 
 class AddNotePage extends StatefulWidget {
@@ -181,9 +229,9 @@ class _AddNotePageState extends State<AddNotePage> {
       onWillPop: () async {
         if (_hasChanges) {
           _saveNote();
-          return false; // Prevent popping the context immediately
+          return false;
         }
-        return true; // Allow popping the context
+        return true;
       },
       child: Scaffold(
         appBar: AppBar(
@@ -202,13 +250,15 @@ class _AddNotePageState extends State<AddNotePage> {
                 ),
               ),
               const SizedBox(height: 16.0),
-              TextField(
+              TextFormField(
                 controller: _bodyController,
                 onChanged: (_) => _textChanged(),
                 decoration: const InputDecoration(
                   labelText: 'Body',
                 ),
-                maxLines: null, // Allow multiple lines in the TextField
+                maxLines: null,
+                keyboardType: TextInputType.multiline,
+                textInputAction: TextInputAction.newline,
               ),
             ],
           ),
