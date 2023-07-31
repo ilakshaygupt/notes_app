@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:notes_app/note.dart';
+import 'package:notes_app/add_note.dart';
 
 void main() => runApp(const NotesApp());
 
@@ -39,17 +41,26 @@ class _NotesHomePageState extends State<NotesHomePage> {
   void loadNotes() async {
     final prefs = await SharedPreferences.getInstance();
     final noteList = prefs.getStringList('notes');
+    List<Note> loadedNotes = [];
+
     if (noteList != null) {
-      setState(() {
-        notes =
-            noteList.map((noteString) => Note.fromString(noteString)).toList();
-      });
+      for (var noteString in noteList) {
+        loadedNotes.add(Note.fromString(noteString));
+      }
     }
+
+    setState(() {
+      notes = loadedNotes;
+    });
   }
 
   void saveNotes() async {
     final prefs = await SharedPreferences.getInstance();
-    final noteList = notes.map((note) => note.toString()).toList();
+    List<String> noteList = [];
+    for (var note in notes) {
+      noteList.add(note.toString());
+    }
+
     await prefs.setStringList('notes', noteList);
   }
 
@@ -142,119 +153,6 @@ class _NotesHomePageState extends State<NotesHomePage> {
       floatingActionButton: FloatingActionButton(
         onPressed: addNote,
         child: const Icon(Icons.add),
-      ),
-    );
-  }
-}
-
-class Note {
-  late final String title;
-  late final String body;
-
-  Note({
-    required this.title,
-    required this.body,
-  });
-
-  Note.fromString(String noteString) {
-    final parts = noteString.split('\n');
-    title = parts[0];
-    body = parts.sublist(1).join('\n');
-  }
-
-  @override
-  String toString() {
-    return '$title\n$body';
-  }
-}
-
-class AddNotePage extends StatefulWidget {
-  final Note? note;
-
-  const AddNotePage({Key? key, this.note}) : super(key: key);
-
-  @override
-  _AddNotePageState createState() => _AddNotePageState();
-}
-
-class _AddNotePageState extends State<AddNotePage> {
-  late final TextEditingController _titleController;
-  late final TextEditingController _bodyController;
-  bool _hasChanges = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _titleController = TextEditingController(text: widget.note?.title);
-    _bodyController = TextEditingController(text: widget.note?.body);
-
-    _titleController.addListener(_textChanged);
-    _bodyController.addListener(_textChanged);
-  }
-
-  @override
-  void dispose() {
-    _titleController.dispose();
-    _bodyController.dispose();
-    super.dispose();
-  }
-
-  void _textChanged() {
-    setState(() {
-      _hasChanges = true;
-    });
-  }
-
-  void _saveNote() {
-    final updatedTitle = _titleController.text;
-    final updatedBody = _bodyController.text;
-    if (updatedTitle.isNotEmpty && updatedBody.isNotEmpty) {
-      final updatedNote = Note(
-        title: updatedTitle,
-        body: updatedBody,
-      );
-      Navigator.pop(context, updatedNote);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        if (_hasChanges) {
-          _saveNote();
-          return false;
-        }
-        return true;
-      },
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text(widget.note != null ? 'Edit Note' : 'Add Note'),
-        ),
-        body: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              TextField(
-                controller: _titleController,
-                onChanged: (_) => _textChanged(),
-                decoration: const InputDecoration(
-                    labelText: 'Title', border: InputBorder.none),
-              ),
-              const SizedBox(height: 16.0),
-              TextFormField(
-                controller: _bodyController,
-                onChanged: (_) => _textChanged(),
-                decoration: const InputDecoration(
-                    labelText: 'Body', border: InputBorder.none),
-                maxLines: null,
-                keyboardType: TextInputType.multiline,
-                textInputAction: TextInputAction.newline,
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
